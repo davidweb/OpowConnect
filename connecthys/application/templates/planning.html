@@ -1,0 +1,165 @@
+{% extends "page.html" %}
+{% import "macros_planning.html" as macros_planning with context %}
+	
+	
+{% block content -%}
+
+	{% if GetParametre("PLANNING_INTRO", dict_parametres) != '' %}
+		<h4 class="page-header">
+			<small><i class="fa fa-info-circle"></i> {{ GetParametre("PLANNING_INTRO", dict_parametres) }}</small>
+		</h4>
+	{% endif %}
+	  
+	<p>	
+	<a id="retour_reservations" href="{{ url_for('reservations') }}"><i class="fa fa-arrow-circle-o-left"></i> Revenir à la liste des périodes</a>
+	</p>
+
+	<!-- Widget: user widget style 1 -->
+	<div class="box box-widget widget-user">
+	<!-- Add the bg color to the header using any of the bg-* classes -->
+	{% set individu = dict_planning["inscription"].get_individu() %}
+	<div class="widget-user-header bg-{{ dict_planning['couleur'] }}">
+	  <h3 class="widget-user-username">{{ individu.GetRenseignement("prenom") or individu.GetRenseignement("nom") }}</h3>
+	  <h5 class="widget-user-desc">{{ individu.get_date_naiss() }}&nbsp;</h5>
+	</div>
+	<div class="widget-user-image">
+	  <img class="img-circle" src="{{ url_for('static', filename=individu.get_image()) }}" alt="User Avatar">
+	</div>
+	<div class="box-footer">
+	  <div class="row">
+		<div class="col-sm-4 border-right">
+		  <div class="description-block">
+			<h5 class="description-header"><small>Activité</small></h5>
+			<span class="description-text text-{{ dict_planning['couleur'] }}">{{ dict_planning["periode"].activite.nom }}</span>
+		  </div>
+		  <!-- /.description-block -->
+		</div>
+		<!-- /.col -->
+		<div class="col-sm-4 border-right">
+		  <div class="description-block">
+			<h5 class="description-header"><small>Période</small></h5>
+			<span class="description-text text-{{ dict_planning['couleur'] }}">{{ dict_planning["periode"].nom }}</span>
+		  </div>
+		  <!-- /.description-block -->
+		</div>
+		<!-- /.col -->
+		<div class="col-sm-4">
+		  <div class="description-block">
+			<h5 class="description-header"><small>Dates</small></h5>
+			<span class="description-text text-{{ dict_planning['couleur'] }}">Du {{ DateDDEnFr(dict_planning["periode"].date_debut) }} au {{ DateDDEnFr(dict_planning["periode"].date_fin) }}</span>
+		  </div>
+		  <!-- /.description-block -->
+		</div>
+		<!-- /.col -->
+	  </div>
+	  <!-- /.row -->
+	</div>
+	</div>
+	<!-- /.widget-user -->
+	
+	<!-- Alerte si conso en attente -->
+	{% set nbre_dates_attente = GetNbreDatesAttente(dict_planning) %}
+	{% if nbre_dates_attente > 0 %}
+		<div class="alert alert-danger alert-dismissible">
+			<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+			<h4><i class="icon fa fa-warning"></i> Attention !</h4>
+			Il y a {{ nbre_dates_attente }} {% if nbre_dates_attente == 1 %}date qui comporte{% else %}dates qui comportent{% endif %} au moins une réservation en attente.
+		</div>
+
+	{% endif %}
+
+		
+	<!-- Planning -->
+	<div class="box box-solid">
+		
+		{% if dict_planning["periode"].introduction not in (None, "") %}
+		<div class="box-header with-border">
+			<h4 class="box-title"><small><i class="fa fa-info-circle"></i> {{ dict_planning["periode"].introduction }}</small></h4>
+		</div>
+		{% endif %}
+		
+		<div id="div_table" class="box-body no-padding table-responsive">
+			{{ macros_planning.planning_body(dict_planning=dict_planning) }}
+		</div>
+		<div class="box-footer clearfix">
+				<!-- <a id="imprimer" href="{{ url_for('imprimer_reservations', IDindividu=dict_planning['inscription'].IDindividu, IDperiode=dict_planning['periode'].IDperiode, resultats="coucou") }}" target="_blank" class="btn btn-default"><i class="fa fa-print"></i> Imprimer</a> -->
+				<a id="imprimer" target="_blank" class="btn btn-default"><i class="fa fa-print"></i> Imprimer</a>
+				&nbsp;
+				<button type="button" id="appliquer_semaine_type" class="btn btn-default" data-toggle="modal" data-target="#modal_appliquer_semaine_type"><i class="fa fa-calendar-check-o"></i> Appliquer une semaine-type</button>
+				<ul class="pagination pagination-sm no-margin pull-right">
+				<li>
+					<button type="button" id="annuler" class="btn btn-danger" href="{{ url_for('reservations') }}">Annuler</button>
+				</li>
+				&nbsp;
+				<li>
+					<button type="button" id="envoyer" class="btn btn-primary" data-toggle="modal" data-target="#modal_confirmation_envoi">Envoyer la demande</button>
+				</li>
+			</ul>
+		</div>
+	</div>
+		
+	<!-- Légende -->
+	<div class="box box-solid">
+		<div class="box-header with-border">
+			<h3 class="box-title">Légende</h3>
+		</div>
+				
+		<div class="box-body">
+			<div class="row">
+					<div class="col-sm-4 col-md-4"><small class="label bg-black"><i class="fa fa-check"></i></small> Réservation demandée</div>
+					<div class="col-sm-4 col-md-4"><small class="label bg-green"><i class="fa fa-check"></i></small> Réservation traitée et acceptée</div>
+					<div class="col-sm-4 col-md-4"><small class="label bg-red"><i class="fa fa-close"></i>&nbsp;</small> Réservation traitée mais en attente</div>
+			</div>	
+					
+<!-- 			<table class="table table-bordered">
+				<tr>
+					<td><center> Réservation </center></td>
+					<td><center> Status </center></td>
+				</tr>
+				<tr>
+					<td>
+						<table class="table table-bordered">
+							<tr><td><center> Modifiable </center></td><td><center> Non modifiable </center></td></tr>
+							<tr>
+								<td>
+									<ul class="list-unstyled">
+										<li><small class="label" style="background-color: #d7dcde;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small> Non réservé </li>
+										<li><small class="label bg-black"><i class="fa fa-check"></i></small> Reservé </li>
+									</ul>
+								</td>
+								<td>
+									<ul class="list-unstyled">
+										<li><small class="label" style="background-color: #eaedee;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small> Non réservé </li>
+										<li><small class="label" style="background-color: #eaedee;"><i class="fa fa-check"></i></small> Reservé </li>
+									</ul>
+								</td>
+							</tr>
+						</table>
+					</td>
+					<td>
+						<ul class="list-unstyled">
+							<li><small class="label bg-green"><i class="fa fa-check"></i></small> Présent</li>
+							<li><small class="label bg-red"><i class="fa fa-check"></i></small> Absence injustifiée</li>
+							<li><small class="label" style="background-color: #f39c12;"><i class="fa fa-close"></i>&nbsp;</small> Absence justifiée</li>
+							<li><small class="label bg-red">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small> Attente</li>
+						</ul>
+				</tr>
+			</table>
+ -->		
+ 
+		</div>
+	</div>
+ 
+	{{ macros_planning.planning_modals(dict_planning=dict_planning) }}
+
+{%- endblock content %}
+
+
+{% block scripts %}
+
+	{{ super() }}
+	{{ macros_planning.planning_scripts(dict_planning=dict_planning) }}
+
+<!--	<script type="text/javascript" src="{{ url_for('static', filename='plugins/freeze-table/js/freeze-table.min.js') }}"></script>-->
+
+{%- endblock scripts %}

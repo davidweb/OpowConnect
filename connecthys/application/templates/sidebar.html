@@ -1,0 +1,67 @@
+{% block sidebar -%}
+<!-- sidebar: style can be found in sidebar.less -->
+<!-- sidebar menu: : style can be found in sidebar.less -->
+<div class="user-panel">
+	{% if GetParametre('ORGANISATEUR_IMAGE', dict_parametres) != '' %}
+		<div class="image">
+			<img src="{{ url_for('static', filename=GetParametre('ORGANISATEUR_IMAGE', dict_parametres)) }}" alt="User Image" {% if GetParametre('ORGANISATEUR_IMAGE_ROND', dict_parametres) == 'True' %}class="img-circle"{% endif %}>
+		</div>
+	{% endif %}
+	<div class="info">
+		<ul>
+			{% if GetParametre('ORGANISATEUR_NOM', dict_parametres) != '' %}<li><p><strong>{{ GetParametre('ORGANISATEUR_NOM', dict_parametres) }}</strong></p></li>{% endif %}
+			{% if GetParametre('ORGANISATEUR_RUE', dict_parametres) != '' %}<li>{{ GetParametre('ORGANISATEUR_RUE', dict_parametres) }}</li>{% endif %}
+			{% if GetParametre('ORGANISATEUR_CP', dict_parametres) != '' %}<li>{{ GetParametre('ORGANISATEUR_CP', dict_parametres) }} {{ GetParametre('ORGANISATEUR_VILLE', dict_parametres) }}</li>{% endif %}
+			{% if GetParametre('ORGANISATEUR_TEL', dict_parametres) != '' %}<li><i class="fa fa-phone"></i> {{ GetParametre('ORGANISATEUR_TEL', dict_parametres) }}</li>{% endif %}
+			{% if GetParametre('ORGANISATEUR_FAX', dict_parametres) != '' %}<li><i class="fa fa-fax"></i> {{ GetParametre('ORGANISATEUR_FAX', dict_parametres) }}</li>{% endif %}
+		</ul>
+	</div>
+</div>
+  
+
+<div>
+	<ul class="sidebar-menu">
+
+		{% if current_user.role == "famille" %}
+			{% set liste_pages = g.liste_pages_familles %}
+		{% elif current_user.role == "utilisateur" %}
+			{% set liste_pages = g.liste_pages_admin %}
+		{% else %}
+			{% set liste_pages = [] %}
+		{% endif %}
+
+		{% for dict_menu in liste_pages %}
+		
+			{% if dict_menu["type"] == "label" %}
+		
+				<li class="header">{{ dict_menu["label"] }}</li>
+		
+			{% else %}
+			
+				{% set page = dict_menu["page"] %}
+			
+				{% if page == "accueil_famille" or page == "accueil_admin" or dict_menu["affichage"] == True or GetParametre(dict_menu["affichage"], dict_parametres) == 'True' %}
+				
+					{% if page == active_page %}
+						<li class="active">
+					{% else %}
+						<li>
+					{% endif %}
+						<a class="item_sidemenu" href="{% if 'num_page' in dict_menu %}{{ url_for('page_perso', num_page=dict_menu['num_page']) }}{% else %}{{ url_for(page) }}{% endif %}">
+							<i class="fa {{ g.dict_pages[page]['icone'] }}"></i> {# Pour avoir la couleur, ajouter : text-{{ g.dict_pages[page]['couleur'] }}  #}
+							<span>{{ g.dict_pages[page]['nom'] }}</span>
+						</a>
+					</li>
+			
+				{% endif %}
+				
+			{% endif %}
+		
+		{% endfor %}
+		
+		<li>&nbsp;</li>
+					
+	</ul>
+</div>
+<!-- /.sidebar -->
+{%- endblock sidebar %}

@@ -1,0 +1,24 @@
+{% extends "adminlte/base_without_nav.html" %}
+
+{% block title %}Connexion{% endblock %}
+{% block description %}Connexion{% endblock %}
+{% block bodytag %}login-page{% endblock %}
+
+
+{% block body %}
+	
+  <div class="login-box">
+    <div style="color: black" class="login-logo">
+      {{ GetParametre("ACCUEIL_TITRE", dict_parametres)|safe }}
+    </div>
+    <div class="login-box-body">
+      <p>Votre session a expiré.</p>
+      <br>
+	  <p><a href="{{ url_for('accueil') }}"><i class="fa fa-arrow-circle-o-left"></i> Revenir au portail famille</a></p>
+    </div>
+  </div>
+
+{% endblock %}
+
+
+

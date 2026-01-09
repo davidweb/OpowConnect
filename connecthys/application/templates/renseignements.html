@@ -1,0 +1,449 @@
+{% extends "page.html" %}
+{% import "macros_historique.html" as macros_historique with context %}
+
+
+    {%- block styles %}
+
+	{{ super() }}
+
+	<!-- Pour affichage de l'autocomplete de jQuery -->
+	<style type="text/css" media="screen">
+
+.ui-autocomplete {
+  position: absolute;
+  z-index: 2150000000 !important;
+  cursor: default;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  float: left;
+  display: none;
+  min-width: 160px;
+  _width: 160px;
+  padding: 4px 0;
+  margin: 2px 0 0 0;
+  list-style: none;
+  background-color: #ffffff;
+  border-color: #ccc;
+  border-color: rgba(0, 0, 0, 0.2);
+  border-style: solid;
+  border-width: 1px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  -moz-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  -webkit-background-clip: padding-box;
+  -moz-background-clip: padding;
+  background-clip: padding-box;
+  *border-right-width: 2px;
+  *border-bottom-width: 2px;
+
+  .ui-menu-item > a.ui-corner-all {
+    display: block;
+    padding: 3px 15px;
+    clear: both;
+    font-weight: normal;
+    line-height: 18px;
+    color: #555555;
+    white-space: nowrap;
+
+    &.ui-state-hover, &.ui-state-active {
+      color: #ffffff;
+      text-decoration: none;
+      background-color: #0088cc;
+      border-radius: 0px;
+      -webkit-border-radius: 0px;
+      -moz-border-radius: 0px;
+      background-image: none;
+    }
+  }
+}
+
+	</style>
+	
+	{%- endblock styles %}
+
+
+
+	
+{% block content -%}
+
+{% if GetParametre("RENSEIGNEMENTS_INTRO", dict_parametres) != '' %}
+	<h4 class="page-header">
+		<small><i class="fa fa-info-circle"></i> {{ GetParametre("RENSEIGNEMENTS_INTRO", dict_parametres) }}</small>
+	</h4>
+{% endif %}
+  		
+
+			
+
+		
+
+{% for individu in liste_individus %}
+<div class="box box-widget widget-user-2">
+	
+	<!-- Définit une couleur au hasard pour l'individu -->
+	{% set couleur = individu.couleur %}
+	{% set champs_modifies = False %}
+	
+	<!-- Nom de l'individu -->
+	<div class="widget-user-header bg-{{ couleur }}">
+		<div class="widget-user-image">
+			<img class="img-circle" src="{{ url_for('static', filename=individu.get_image()) }}" alt="User Avatar">
+		</div>
+		<h3 class="widget-user-username">{{ individu.GetRenseignement("prenom") or individu.GetRenseignement("nom") }}</h3>
+		<h5 class="widget-user-desc">{{ individu.get_date_naiss() }}&nbsp;</h5>
+	</div>
+	
+	<!-- Liste des renseignements -->
+	<div class="box-footer no-padding">
+		<table class="table table-bordered table-striped no-margin">
+			<tbody>
+				
+				{% if (individu.IDcategorie == 1 and GetParametre("RENSEIGNEMENTS_ADULTE_NOM", dict_parametres) != 'masquer') or (individu.IDcategorie == 2 and GetParametre("RENSEIGNEMENTS_ENFANT_NOM", dict_parametres) != 'masquer') %}
+				<tr>
+					<td  style="width: 50%"><center><b>Nom de famille</b></center></td>
+					<td><center>
+						{{ individu.renseignements["nom"] }}
+						{% if "nom" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				<tr>
+					<td  style="width: 50%"><center><b>Prénom</b></center></td>
+					<td><center>{{ individu.renseignements["prenom"] }}</center></td>
+				</tr>
+				{% endif %}
+				
+				{% if (individu.IDcategorie == 1 and GetParametre("RENSEIGNEMENTS_ADULTE_NAISSANCE", dict_parametres) != 'masquer') or (individu.IDcategorie == 2 and GetParametre("RENSEIGNEMENTS_ENFANT_NAISSANCE", dict_parametres) != 'masquer') %}
+				<tr>
+					<td  style="width: 50%"><center><b>Date de naissance</b></center></td>
+					<td><center>
+						{{ individu.renseignements["date_naiss"] }}
+						{% if "date_naiss" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				<tr>
+					<td  style="width: 50%"><center><b>Ville de naissance</b></center></td>
+					<td><center>
+						{{ individu.renseignements["ville_naiss"] }}
+						{% if "ville_naiss" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				{% endif %}
+				
+				{% if GetParametre("RENSEIGNEMENTS_ADRESSE", dict_parametres) != 'masquer' %}
+				<tr>
+					<td  style="width: 50%"><center><b>Adresse</b></center></td>
+					<td><center>
+						{{ individu.renseignements["adresse"] }}
+						{% if "adresse_auto" in individu.renseignements["champs_modifies"] or "rue_resid" in individu.renseignements["champs_modifies"] or "cp_resid" in individu.renseignements["champs_modifies"] or "ville_resid" in individu.renseignements["champs_modifies"] %}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				{% endif %}				
+				
+				{% if (individu.IDcategorie == 1 and GetParametre("RENSEIGNEMENTS_ADULTE_COORDS", dict_parametres) != 'masquer') or (individu.IDcategorie == 2 and GetParametre("RENSEIGNEMENTS_ENFANT_COORDS", dict_parametres) != 'masquer') %}
+				<tr>
+					<td  style="width: 50%"><center><b>Téléphone domicile</b></center></td>
+					<td><center>
+						{{ individu.renseignements["tel_domicile"] }}
+						{% if "tel_domicile" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				<tr>
+					<td  style="width: 50%"><center><b>Téléphone mobile</b></center></td>
+					<td><center>
+						{{ individu.renseignements["tel_mobile"] }}
+						{% if "tel_mobile" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				<tr>
+					<td  style="width: 50%"><center><b>Adresse Email</b></center></td>
+					<td><center>
+						{{ individu.renseignements["mail"] }}
+						{% if "mail" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				{% endif %}
+
+				{% if individu.IDcategorie == 1 and GetParametre("RENSEIGNEMENTS_ADULTE_PROFESSION", dict_parametres) != 'masquer' %}
+				<tr>
+					<td  style="width: 50%"><center><b>Profession</b></center></td>
+					<td><center>
+						{{ individu.renseignements["profession"] }}
+						{% if "profession" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				<tr>
+					<td  style="width: 50%"><center><b>Employeur</b></center></td>
+					<td><center>
+						{{ individu.renseignements["employeur"] }}
+						{% if "employeur" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				<tr>
+					<td  style="width: 50%"><center><b>Téléphone professionnel</b></center></td>
+					<td><center>
+						{{ individu.renseignements["travail_tel"] }}
+						{% if "travail_tel" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+					</center></td>
+				</tr>
+				<tr>
+					<td  style="width: 50%"><center><b>Email professionnel</b></center></td>
+					<td><center>
+						{% if "travail_mail" in individu.renseignements["champs_modifies"]%}<span style="color:red">*</span>{% set champs_modifies = True %}{% endif %}
+						{{ individu.renseignements["travail_mail"] }}
+					</center></td>
+				</tr>
+				{% endif %}
+
+			</tbody>
+		</table>
+	</div>
+		
+	{% if GetParametre("RENSEIGNEMENTS_MODIFIER", dict_parametres) == "True" %}
+	<div class="box-footer no-margin">
+		{% if champs_modifies == True %}<font color="red" size="2px">* Modification en attente de validation par l'administrateur</font>{% endif %}
+		<span class="pull-right"><a href="#" id="demander_modification" data-idindividu="{{ individu.IDindividu }}" class="btn btn-primary btn-xs bouton_modifier" title="Modifier les renseignements de {{ individu.GetRenseignement("prenom") }}"><i class="fa fa-pencil"></i> Modifier</a></span>
+	</div>
+	{% endif %}
+
+</div>
+{% endfor %}
+		  	
+			
+
+
+<!-- Modal : Demander une modification -->
+<div class="modal fade" id="modal_demander_modification" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+		
+			<div class="modal-header bg-light-blue">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="myModalLabel"><strong>Demander une modification des renseignements</strong></h4>
+			</div>
+	  
+			<div class="modal-body">
+				<div id="questionnaire"></div>
+				<div id="message_erreur" class="text-red"></div>
+			</div>
+
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+				<button type="button" class="btn btn-primary" id="envoyer">Valider</button>
+			</div>
+
+		</div>
+	</div>
+</div>
+			
+			
+<br>			
+			
+{# Historique des demandes #}
+{{ macros_historique.historique_body(titre="Historique des demandes", soustitre="Vous pouvez supprimer des demandes non traitées.", historique=historique) }}
+
+{%- endblock content %}
+
+{% block scripts %}
+
+	{{ super() }}
+	
+	
+	<script>
+	  $('#modal_demander_modification').on('show.bs.modal', function (e) {
+
+			$("#cp_resid").autocomplete({
+				source: function (request, response) {
+					$.ajax({
+						url: "https://api-adresse.data.gouv.fr/search/?postcode="+$("input[id='cp_resid']").val()+"&limit=7",
+						data: { q: request.term },
+						dataType: "json",
+						success: function (data) {
+							var postcodes = [];
+							response($.map(data.features, function (item) {
+								// Ici on est obligé d'ajouter les CP dans un array pour ne pas avoir plusieurs fois le même
+								if ($.inArray(item.properties.postcode + " - " + item.properties.city, postcodes) == -1) {
+									postcodes.push(item.properties.postcode + " - " + item.properties.city);
+									return { label: item.properties.postcode + " - " + item.properties.city, 
+											 city: item.properties.city,
+											 value: item.properties.postcode
+									};
+								}
+							}));
+						}
+					});
+				},
+				// On remplit aussi la ville
+				select: function(event, ui) {
+					$('#ville_resid').val(ui.item.city);
+				}
+			});
+			$("#ville_resid").autocomplete({
+				source: function (request, response) {
+					$.ajax({
+						url: "https://api-adresse.data.gouv.fr/search/?city="+$("input[id='ville_resid']").val()+"&type=municipality&limit=7",
+						data: { q: request.term },
+						dataType: "json",
+						success: function (data) {
+							var cities = [];
+							response($.map(data.features, function (item) {
+								// Ici on est obligé d'ajouter les villes dans un array pour ne pas avoir plusieurs fois la même
+								if ($.inArray(item.properties.postcode, cities) == -1) {
+									cities.push(item.properties.postcode);
+									return { label: item.properties.postcode + " - " + item.properties.city, 
+											 postcode: item.properties.postcode,
+											 value: item.properties.city
+									};
+								}
+							}));
+						}
+					});
+				},
+				// On remplit aussi le CP
+				select: function(event, ui) {
+					$('#cp_resid').val(ui.item.postcode);
+				}
+			});
+	  
+	  
+			$("#cp_naiss").autocomplete({
+				source: function (request, response) {
+					$.ajax({
+						url: "https://api-adresse.data.gouv.fr/search/?postcode="+$("input[id='cp_naiss']").val()+"&limit=7",
+						data: { q: request.term },
+						dataType: "json",
+						success: function (data) {
+							var postcodes = [];
+							response($.map(data.features, function (item) {
+								// Ici on est obligé d'ajouter les CP dans un array pour ne pas avoir plusieurs fois le même
+								if ($.inArray(item.properties.postcode + " - " + item.properties.city, postcodes) == -1) {
+									postcodes.push(item.properties.postcode + " - " + item.properties.city);
+									return { label: item.properties.postcode + " - " + item.properties.city, 
+											 city: item.properties.city,
+											 value: item.properties.postcode
+									};
+								}
+							}));
+						}
+					});
+				},
+				// On remplit aussi la ville
+				select: function(event, ui) {
+					$('#ville_naiss').val(ui.item.city);
+				}
+			});
+			
+			$("#ville_naiss").autocomplete({
+				source: function (request, response) {
+					$.ajax({
+						url: "https://api-adresse.data.gouv.fr/search/?city="+$("input[id='ville_naiss']").val()+"&type=municipality&limit=7",
+						data: { q: request.term },
+						dataType: "json",
+						success: function (data) {
+							var cities = [];
+							response($.map(data.features, function (item) {
+								// Ici on est obligé d'ajouter les villes dans un array pour ne pas avoir plusieurs fois la même
+								if ($.inArray(item.properties.postcode, cities) == -1) {
+									cities.push(item.properties.postcode);
+									return { label: item.properties.postcode + " - " + item.properties.city, 
+											 postcode: item.properties.postcode,
+											 value: item.properties.city
+									};
+								}
+							}));
+						}
+					});
+				},
+				// On remplit aussi le CP
+				select: function(event, ui) {
+					$('#cp_naiss').val(ui.item.postcode);
+				}
+			});
+
+	  });
+	  </script>
+	
+	
+	
+	<script>
+		// Affichage de la fenêtre modale 'Demander une modification'
+		$('.bouton_modifier').click(function(event) {
+			var idindividu = $(this).attr("data-idindividu");
+			var url = "{{ url_for('modifier_renseignements') }}" + "?IDindividu=" + idindividu;
+			$.get(url, function(data) {
+				$('#modal_demander_modification #questionnaire').html(data);
+				$('#modal_demander_modification').modal();
+				
+				$('#modal_demander_modification #date_naiss').inputmask('dd/mm/yyyy', { 'placeholder': 'jj/mm/aaaa' })
+				$('#modal_demander_modification #tel_domicile').inputmask('99.99.99.99.99.', { 'placeholder': '__.__.__.__.__.' })
+				$('#modal_demander_modification #tel_mobile').inputmask('99.99.99.99.99.', { 'placeholder': '__.__.__.__.__.' })
+				$('#modal_demander_modification #travail_tel').inputmask('99.99.99.99.99.', { 'placeholder': '__.__.__.__.__.' })
+				$('#cp_naiss').inputmask('99999', { 'placeholder': '_____' })
+				$('#cp_resid').inputmask('99999', { 'placeholder': '_____' })
+
+				});
+			
+			// Remplissage des champs
+			$('#message_erreur').text('');
+		
+		})
+	</script>
+	
+	<script>
+		$('#modal_demander_modification').on('show.bs.modal', function (e) {
+			var adresse_auto = $('#adresse_auto option:selected').val();
+			if (adresse_auto == 0){
+				$('#adresse_manuelle').show();
+			}else{
+				$('#adresse_manuelle').hide();
+			}
+		});
+	</script>
+	
+	<script type=text/javascript>
+		// Validation de l'envoi de la demande de modification
+		$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+		$(function() {
+			$('button#envoyer').bind('click', function(event) {
+				// Envoie les données au serveur
+				$.getJSON({
+					url: "{{ url_for('envoyer_modification_renseignements') }}",
+					data: $('form').serialize(),
+					type: 'POST',
+				}, function(data) {
+					if (data.success) {
+						// Cache la fenêtre modale
+						$('#modal_demander_modification').modal('hide');
+						// Recharge la page
+						location.href = "{{ url_for('renseignements') }}"
+					} else {
+						// Affiche un message d'erreur dans la fenêtre modale
+						$('#message_erreur').text('Erreur : ' + data.error_msg)
+					}
+				});
+			});
+		});
+	</script>
+
+	<script type=text/javascript>
+	$(document.body).on('change',"#adresse_auto", function(e) {
+		var adresse_auto = this.value;
+		if (adresse_auto == 0){
+			$('#adresse_manuelle').show();
+		}else{
+			$('#adresse_manuelle').hide();
+		}
+	});
+	</script>
+		
+	<script src="{{ adminlte_find_resource('plugins/input-mask/jquery.inputmask.js', cdn='local', use_minified=False)}}"></script>
+	<script src="{{ adminlte_find_resource('plugins/input-mask/jquery.inputmask.date.extensions.js', cdn='local', use_minified=False)}}"></script>
+	<script src="{{ adminlte_find_resource('plugins/input-mask/jquery.inputmask.extensions.js', cdn='local', use_minified=False)}}"></script>
+
+	{# Historiques des demandes #}
+	{{ macros_historique.historique_scripts(historique=historique, page="renseignements") }}
+
+{%- endblock scripts %}

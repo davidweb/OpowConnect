@@ -1,0 +1,164 @@
+{% extends "page.html" %}
+{% import "macros_historique.html" as macros_historique with context %}
+{% import "macros_paiement_ligne.html" as macros_paiement_ligne with context %}
+{% import "macros_recevoir_document.html" as macros_recevoir_document with context %}
+
+
+{% block content -%}
+
+{% if GetParametre("FACTURES_INTRO", dict_parametres) != '' %}
+	<h4 class="page-header">
+		<small><i class="fa fa-info-circle"></i> {{ GetParametre("FACTURES_INTRO", dict_parametres) }}</small>
+	</h4>
+{% endif %}
+
+	<div class="row">
+		<div class="col-xs-12">
+			
+			{% if texte_impayes != None and GetParametre("FACTURES_AFFICHER_SOLDE_TOTAL", dict_parametres) in ('True', '', None) %}
+				<div class="callout callout-danger">
+					<h5><i class="icon fa fa-warning"></i>  {{ texte_impayes|safe }}</h5>
+				</div>
+
+				{# Paiement en ligne #}
+				{{ macros_paiement_ligne.paiement_ligne_body() }}
+
+			{% endif %}
+
+			{# Prélèvement automatique #}
+			{% if current_user.GetParametres().get("prelevement_auto", "0") == "1" %}
+				<div class="box box-success ">
+					<div class="box-header with-border">
+						<h3 class="box-title">Information</h3>
+					</div>
+					<div class="box-body">
+						<p>Vous êtes abonné au prélèvement automatique.</p>
+					</div>
+				</div>
+			{% endif %}
+
+			{# Solde du compte famille #}
+			{% if GetParametre("FACTURES_AFFICHER_SOLDE_FAMILLE", dict_parametres) in ('True', '', None) %}
+				{% if solde_famille < 0.0 %}
+					<div class="callout callout-danger"><h5><i class="icon fa fa-info-circle"></i> &nbsp;&nbsp;Le solde de votre compte famille est de <b>{{ Formate_montant(solde_famille) }} (Impayés)</b></h5></div>
+				{% elif solde_famille == 0.0 %}
+					<div class="callout callout-success"><h5><i class="icon fa fa-info-circle"></i> &nbsp;&nbsp;Le solde de votre compte famille est de <b>{{ Formate_montant(solde_famille) }}</b></h5></div>
+				{% else %}
+					<div class="callout callout-success"><h5><i class="icon fa fa-info-circle"></i> &nbsp;&nbsp;Le solde de votre compte famille est de <b>{{ Formate_montant(solde_famille) }} (Avoir)</b></h5></div>
+				{% endif %}
+			{% endif %}
+
+			{% if liste_prefacturation|length > 0 %}
+				<div class="row">
+					<div class="col-xs-12">
+						<div class="box box-danger">
+							<div class="box-header with-border">
+								<h3 class="box-title">Liste des prestations à régler en avance</h3>
+							</div>
+							<div class="box-body table-responsive">
+								<table class="table table-bordered table-striped">
+									<tbody>
+										<tr>
+											<th><center>Intitulé</center></th>
+											<th><center>Activité</center></th>
+											<th><center>Montant</center></th>
+											<th><center>Déjà réglé</center></th>
+											<th><center>Reste à régler</center></th>
+										</tr>
+										{% for prefacturation in liste_prefacturation %}
+										<tr>
+											{% set periode = prefacturation.get_periode() %}
+											<td><center>{{ periode.nom }}</center></td>
+											<td><center>{{ periode.activite.nom }}</center></td>
+											<td><center>{{ Formate_montant(prefacturation.montant) }}</center></td>
+											<td><center>{{ Formate_montant(prefacturation.montant_regle) }}</center></td>
+											<td><center><span class="badge bg-{% if prefacturation.montant_solde > 0.0 %}red{% else %}green{% endif %}">{{ Formate_montant(prefacturation.montant_solde) }}</span></center></td>
+										</tr>
+										{% endfor %}
+									</tbody>
+								</table>
+								<span class="text-muted"><small><i class="fa fa-info-circle"></i> Cette liste ne tient pas compte des demandes non traitées ni des prestations qui apparaissent déjà dans des factures.</small></span>
+							</div>
+						</div>
+						<!-- /.box -->
+					</div>
+				</div>
+			{% endif %}
+
+				  
+			<div class="box box-primary">
+				<div class="box-header with-border">
+					<h3 class="box-title">Liste des dernières factures</h3>
+				</div>
+			<!-- /.box-header -->
+				{% if liste_factures|length == 0 %}
+					<div class="box-body">		
+						Aucune facture à afficher
+					</div>
+				{% else %}
+					<div class="box-body table-responsive">
+						<table class="table table-bordered table-striped">
+							<tbody>
+								<tr>
+									<th><center>Du</center></th>
+									<th><center>Au</center></th>
+									<th><center>N°</center></th>
+									<th><center>Montant</center></th>
+									{% if GetParametre("FACTURES_AFFICHER_SOLDE_DETAIL", dict_parametres) in ('True', '', None) %}
+										<th><center>Déjà réglé</center></th>
+										<th><center>Reste à régler</center></th>
+									{% endif %}
+									<th><center>Recevoir</center></th>
+								</tr>
+						
+								{% for facture in liste_factures %}
+								<tr>
+									<td><center>{{ DateDDEnFr(facture.date_debut) }}</center></td>
+									<td><center>{{ DateDDEnFr(facture.date_fin) }}</center></td>
+									<td><center>{{ facture.numero }}</center></td>
+									<td><center>{{ Formate_montant(facture.montant) }}</center></td>
+									{% if GetParametre("FACTURES_AFFICHER_SOLDE_DETAIL", dict_parametres) in ('True', '', None) %}
+										<td><center>{% if facture.en_cours_paiement == "1" %}<span class="badge bg-yellow">{{ Formate_montant(facture.montant_regle) }}</span>{% else %}{{ Formate_montant(facture.montant_regle) }}{% endif %}</center></td>
+										<td><center><span class="badge bg-{% if facture.en_cours_paiement == "1" %}yellow{% elif facture.montant_solde > 0.0 %}red{% else %}green{% endif %}">{{ Formate_montant(facture.montant_solde) }}</span></center></td>
+									{% endif %}
+									<td><center>
+										<button type="button" class="btn btn-box-tool" data-toggle="modal" data-target="#modal_recevoir_document" data-id="{{ facture.IDfacture }}" data-info="{{ facture.numero }}" title="Recevoir un exemplaire de cette facture par Email ou par la Poste">
+										<i class="fa fa-download"></i></button>
+									</center></td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				{% endif %}
+			<!-- /.box-body -->
+			</div>
+			<!-- /.box -->
+		</div>
+	</div>		
+	
+	<br>
+	
+	{# Historique des demandes #}
+	{{ macros_historique.historique_body(titre="Historique des demandes", soustitre="Vous pouvez supprimer des demandes non traitées.", historique=historique) }}
+
+	{# Modal Recevoir un document #}
+	{{ macros_recevoir_document.recevoir_document_body(titre="Recevoir une facture", action="{{ url_for('factures') }}") }}
+
+
+{%- endblock content %}
+
+{% block scripts %}
+
+	{{ super() }}
+
+	{# Paiement en ligne #}
+	{{ macros_paiement_ligne.paiement_ligne_scripts() }}
+
+	{# Recevoir document #}
+	{{ macros_recevoir_document.recevoir_document_scripts(route="/envoyer_demande_facture", page="factures") }}
+
+	{# Historiques des demandes #}
+	{{ macros_historique.historique_scripts(historique=historique, page="factures") }}
+
+{%- endblock scripts %}

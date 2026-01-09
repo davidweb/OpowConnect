@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    {%- block head %}
+    <title>{% block titre %}{{ g.dict_pages[active_page]['nom'] }}{% endblock titre %}</title>
+    {%- block metas %}
+    <meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    {%- endblock metas %}
+    {%- block styles %}
+	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <!-- bootstrap 3.0.2 -->
+    <link href="{{ adminlte_find_resource('bootstrap/css/bootstrap.min.css', cdn='local', use_minified=False) }}" rel="stylesheet" type="text/css" />
+    <!-- Toastr Notifications -->
+    <!-- <link href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" rel="stylesheet" /> -->
+	<link href="{{ adminlte_find_resource('plugins/toastr/toastr.min.css', cdn='local', use_minified=False) }}" rel="stylesheet" type="text/css" />
+    <!-- font Awesome -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.5.0/css/font-awesome.min.css"> -->
+	<link href="{{ adminlte_find_resource('plugins/font-awesome/css/font-awesome.min.css', cdn='local', use_minified=False) }}" rel="stylesheet" type="text/css" />
+    <!-- Ionicons -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css"> -->
+    <!-- Theme style -->
+    <link href="{{ adminlte_find_resource('dist/css/AdminLTE.min.css', cdn='local', use_minified=False) }}" rel="stylesheet" type="text/css" />
+    <!-- Skin  -->
+    <link href="{{ adminlte_find_resource('dist/css/skins/_all-skins.min.css', cdn='local', use_minified=False) }}" rel="stylesheet" type="text/css" />
+    <!-- Pace -->
+    <link href="{{ adminlte_find_resource('plugins/pace/pace.css', cdn='local') }}" rel="stylesheet" type="text/css">
+    <!-- iCheck -->
+    <link href="{{ adminlte_find_resource('plugins/iCheck/all.css', cdn='local', use_minified=False) }}" rel="stylesheet" type="text/css">		
+    <!-- daterangepicker -->
+	<link href="{{ adminlte_find_resource('plugins/daterangepicker/daterangepicker.css', cdn='local', use_minified=False) }}" rel="stylesheet" type="text/css">
+	<!-- Pour affichage logo organisateur dans sidebar -->
+	<style type="text/css" media="screen">
+	.user-panel {
+		position: relative;
+		width: 100%;
+		padding: 15px 10px 10px 10px;
+		overflow: hidden;
+	}
+	.user-panel > .image > img {
+		display: block;
+		width: 100%;
+		max-width: 200px;
+		height: auto;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	.user-panel > .info {
+		padding: 15px 5px 10px 5px;
+		line-height: 1.2;
+		position: relative;
+		left: 0px;
+		text-align: center;
+		color: #ffffff;
+		font-size: 14px;
+		word-wrap : break-word;
+		white-space: normal;
+	}
+	.user-panel > .info > ul {
+		list-style: none;
+		margin:0;
+		padding: 0;
+		word-wrap : break-word;
+	}
+	
+	.table>tbody>tr>td, .table>tbody>tr>th, .table>tfoot>tr>td, .table>tfoot>tr>th, .table>thead>tr>td, .table>thead>tr>th {
+	vertical-align: middle;
+	}
+
+	.modal-header, .close {
+		color:white !important;
+		text-align: center;
+		font-size: 28px;
+		padding: 20px 20px;
+	}
+	.modal-footer {
+		background-color: #f9f9f9;
+	}
+	.help-block {
+		color: #73737375;
+		font-size: 12px;
+	}
+
+	</style>
+	
+	{%- endblock styles %}
+	
+	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	<!--[if lt IE 9]>
+	<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+	<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	<![endif]-->
+  
+    {%- endblock head %}
+</head>
+
+<body class="hold-transition {% block skin %}{{ GetParametre('SKIN', dict_parametres, 'skin-blue') }}{% endblock %} sidebar-mini">
+
+<noscript>
+{% with messages = get_flashed_messages(with_categories=true) %}
+	{% if messages %}
+		<div class="row">
+			<div class="container">
+				<div class="col-1-1">
+					{% for category, message in messages %}
+						<div class="alert-box {{ category }} banner">{{ message|safe }}</div>
+					{% endfor %}
+				</div>
+			</div>
+		</div>
+	{% endif %}
+{% endwith %}
+</noscript>
+
+
+{% block page_body %}
+	<div class="wrapper">
+	
+		<header class="main-header">
+			{% block brand %}
+			  <a href="#" class="logo">
+				  <span class="logo-mini"></span>
+				  <span class="logo-lg">{{ GetParametre("ACCUEIL_TITRE", dict_parametres)|safe }}</span>
+			  </a>
+			{% endblock %}
+
+			<!-- Header Navbar: style can be found in header.less -->
+			<nav class="navbar navbar-static-top" role="navigation">
+				{% include 'navbar.html' %}
+			</nav>
+
+		</header>
+
+		<aside class="main-sidebar">
+			<section class="sidebar">
+				{% include 'sidebar.html' %}
+			</section>
+		</aside>
+
+		<div class="content-wrapper">
+
+			<!-- Content Header (Page header) -->
+			<section class="content-header">
+				{% if active_page != 'accueil' %}
+					{% block content_header -%}
+						<h1>
+							{{ g.dict_pages[active_page]['nom'] }}
+							<small>{{ sous_titre_page }}</small>
+						</h1>
+						<ol class="breadcrumb">
+							<li><a href="{{ url_for('accueil') }}"><i class="fa fa-home"></i> Accueil</a></li>
+							<li class="active">{{ g.dict_pages[active_page]['nom'] }}</li>
+						</ol>
+						{%- endblock content_header %}
+				{% endif %}
+			</section>
+
+			<!-- Main content -->
+			<section class="content">
+				{% block content -%}
+				{%- endblock content %}
+			</section><!-- /.content -->
+		
+		</div>
+		
+		<footer class="main-footer">
+			<div class="pull-right hidden-xs">
+				{% block version %}
+				<b><a href="https://connecthys.com" title="Connecthys, le portail internet de Noethys">Connecthys</a></b> {{ config["VERSION_APPLICATION"] }}
+				{% endblock %}
+			</div>
+			{% block copyright %}<strong>Copyright © {{ g.date_jour.year }}</strong> Ivan LUCAS{% endblock %}
+		</footer>
+	
+	</div>
+	
+{% endblock %}
+
+{% block tail %}{% endblock %}
+
+{% block scripts %}
+<!-- jQuery -->
+<script src="{{ adminlte_find_resource('plugins/jQuery/jquery.min.js', cdn='local',  use_minified=False) }}"></script>
+<script src="{{ adminlte_find_resource('plugins/jQueryUI/jquery-ui.min.js', cdn='local',  use_minified=False) }}"></script>
+<!-- Bootstrap -->
+<script src="{{ adminlte_find_resource('bootstrap/js/bootstrap.min.js', cdn='local',  use_minified=False) }}"></script>
+<!-- Toastr Notifications -->
+<!-- <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script> -->
+<script src="{{ adminlte_find_resource('plugins/toastr/toastr.min.js', cdn='local', use_minified=False)}}"></script>
+<!-- PACE -->
+<script src="{{ adminlte_find_resource('plugins/pace/pace.js', cdn='local', use_minified=False) }}"></script>
+<!-- Slimscroll -->
+<script src="{{ adminlte_find_resource('plugins/slimScroll/jquery.slimscroll.js', cdn='local')}}"></script>
+<!-- Fastclick -->
+<script src="{{ adminlte_find_resource('plugins/fastclick/fastclick.js', cdn='local', use_minified=False)}}"></script>
+<!-- iCheck -->
+<script src="{{ adminlte_find_resource('plugins/iCheck/icheck.min.js', cdn='local', use_minified=False)}}"></script>
+<!-- AdminLTE App -->
+<script src="{{ adminlte_find_resource('dist/js/app.min.js', cdn='local', use_minified=False) }}"></script>
+<script>
+/* turning flask flash messages into js popup notifications */
+window.popupMessages = {{ get_flashed_messages(with_categories=True) | tojson | safe }};
+</script>
+<!-- Local application JS -->
+<script src="{{ adminlte_find_resource('app.js', cdn='local', use_minified=False) }}"></script>
+
+<script>
+  $(function () {
+	//iCheck square-blue
+	$('input[type="checkbox"].square-blue, input[type="radio"].square-blue').iCheck({
+	  checkboxClass: 'icheckbox_square-blue',
+	  radioClass: 'iradio_square-blue',
+	  increaseArea: '+30%'
+	});
+	//iCheck flat-green
+	$('input[type="checkbox"].flat-green, input[type="radio"].flat-green').iCheck({
+	  checkboxClass: 'icheckbox_flat-green',
+	  radioClass: 'iradio_flat-green',
+	  increaseArea: '+30%'
+	});
+	//iCheck flat-black
+	$('input[type="checkbox"].flat-black, input[type="radio"].flat-black').iCheck({
+	  checkboxClass: 'icheckbox_flat',
+	  radioClass: 'iradio_flat',
+	  increaseArea: '+30%'
+	});
+	//iCheck flat-blue
+	$('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
+	  checkboxClass: 'icheckbox_flat-blue',
+	  radioClass: 'iradio_flat-blue',
+	  increaseArea: '+30%'
+	});
+  });
+</script>
+
+{%- endblock scripts %}
+
+</body>
+</html>

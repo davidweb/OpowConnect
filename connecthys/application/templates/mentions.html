@@ -1,0 +1,56 @@
+{% extends "page.html" %}
+  
+  
+{% block content -%}
+  
+	<div class="box box-primary">
+	
+		<div class="box-header with-border">
+			<h3 class="box-title">Mentions légales</h3>
+		</div>
+		
+		<div class="box-body">		
+			
+			<strong>Éditeur</strong>
+
+			<p>
+			Ce portail internet est édité par '{{ GetParametre('ORGANISATEUR_NOM', dict_parametres) }}'.
+			</p>
+
+			<strong>Le portail Connecthys</strong>
+			<p>
+			Connecthys est le portail internet du logiciel libre et gratuit de gestion multi-activités Noethys. Pour davantage d'informations, consultez le site <a href="http://www.noethys.com" title="Découvrir Noethys">www.noethys.com</a>.
+			</p>
+			
+			<p>
+			Copyright © {{ g.date_jour.year }} Ivan LUCAS
+			</p>
+
+		</div>
+		
+	</div>
+
+
+	<div class="box box-success">
+
+		<div class="box-header with-border">
+			<h3 class="box-title">Conditions générales d'utilisation</h3>
+		</div>
+
+		<div class="box-body">
+
+		  {% if conditions_utilisation != None %}
+		  	{{ conditions_utilisation|safe }}
+		  {% endif %}
+
+		</div>
+
+	</div>
+
+
+
+
+
+
+
+{%- endblock content %}

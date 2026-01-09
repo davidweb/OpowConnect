@@ -1,0 +1,649 @@
+{% macro planning_body(dict_planning={}, impression=False) %}
+
+	<table class="table table-bordered">
+		<tbody>
+			
+			<!-- Entêtes de colonnes unités -->
+			<tr>
+				<th></th>
+				{% for unite in dict_planning["liste_unites"] %}
+				<th><center>{{ unite.nom }}</center></th>
+				{% endfor %}
+			</tr>	
+
+			<!-- Lignes dates -->
+			{% set date_precedente = {"valeur" : None} %}
+			
+			{% for date in dict_planning["liste_dates"] %}
+			<tr {% if date_precedente["valeur"] != None and GetNumSemaine(date) != GetNumSemaine(date_precedente["valeur"]) %}style="border-top-style: dashed;border-top-color: rgb(244, 244, 244);"{% endif %}>
+				<td><center>{{ DateDDEnFrComplet(date) }}</center></td>
+				{% for unite in dict_planning["liste_unites"] %}
+					{% if IsUniteOuverte(unite, date, dict_planning) == True %}
+						{% set etat_case = GetEtatFondCase(unite, date, dict_planning) %}
+						{% set etat_coche = GetEtatCocheCase(unite, date, dict_planning) %}
+						{% set modification_allowed = IsUniteModifiable(unite, date, dict_planning) %}
+						<td
+							{% if etat_case == "reservation" %} 
+								style="background-color: #00a65a;background-image:url('{{ url_for('static', filename='img/reservation.png') }}');background-repeat:no-repeat;"
+							{% elif etat_case == "attente" %} 
+								style="background-color: #dd4b39;background-image:url('{{ url_for('static', filename='img/attente.png') }}');background-repeat:no-repeat;"
+							{% elif modification_allowed == False %} 
+								style="background-color: #f5f5f5;"
+							{% endif %}
+							>
+							{% if etat_case == "absenti" or etat_case == "absentj" %} 
+								<center><span class="badge bg-red">Absent</span></center>
+							{% elif etat_case == "present" %} 
+								<center><span class="badge bg-green">Présent</span></center>
+							{% elif etat_case == "refus" %} 
+								<center><span class="badge bg-red">Refus</span></center>
+							{% else %} 
+								{% if impression == False %}
+									<center><input type="checkbox" id="case" class="flat-black" data-date="{{ DateDDEnEng(date) }}" data-IDunite={{ unite.IDunite }} {% if etat_coche == True %} checked {% endif %} {% if modification_allowed == False %} disabled {% endif %}></center>
+								{% else %}
+									{% if etat_case == "reservation" and etat_coche == True %} 
+										<center><span class="badge bg-green">Réservation validée</span></center>
+									{% endif %}
+									{% if etat_case == "reservation" and etat_coche == False %} 
+										<center><span class="badge bg-green">Réservation</span></center>
+										<center><span>[Annulation non traitée]</span></center>
+									{% endif %}
+									{% if etat_case == None and etat_coche == True %} 
+										<center><span class="badge bg-green">Réservation</span></center>
+										<center><span>[Demande non traitée]</span></center>
+									{% endif %}
+									{% if etat_case == "attente" %} 
+										<center><span class="badge bg-red">Réservation en attente</span></center>
+									{% endif %}
+								{% endif %}
+							{% endif %}
+						</td>
+					{% else %}
+						<td bgcolor="#ffffff">
+						</td>
+					{% endif %}
+					
+				{% endfor %}
+				{% if date_precedente.update({'valeur': date}) %}{% endif %}
+			</tr>
+			{% endfor %}
+		
+		</tbody>
+	</table>
+
+{% endmacro %}
+
+
+
+{% macro planning_semaine_type(dict_planning={}, num_semaine=0) %}
+
+	<!-- Tableau de la semaine-type -->
+	<table id='tableau_semaine_type' class='table table-bordered no-margin'>
+		<tbody>
+			<tr>
+				<th></th>
+				{% for unite in dict_planning['liste_unites'] %}
+				<th><center>{{ unite.nom }}</center></th>
+				{% endfor %}
+			</tr>	
+			{% for jour in ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] %}
+				{% if loop.index0 in GetJoursOuverts(dict_planning) %}
+					{% set rowloop = loop %}
+					<tr>
+						<td><center>{{ jour }}</center></td>
+						{% for unite in dict_planning['liste_unites'] %}
+							<td>
+								<center><input type='checkbox' name='case_type' class='flat-black' data-semaine='{{ num_semaine }}' data-jour='{{ rowloop.index0 }}' data-IDunite={{ unite.IDunite }}></center>
+							</td>
+						{% endfor %}
+					</tr>
+				{% endif %}
+			{% endfor %}
+		</tbody>
+	</table>
+
+{% endmacro %}
+
+
+{% macro planning_modals(dict_planning={}) %}
+
+	<!-- Modal : Confirmation de l'envoi -->
+	<div class="modal fade" id="modal_confirmation_envoi" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+	  <div class="modal-dialog" role="document">
+		<div class="modal-content">
+			
+		  <div class="modal-header bg-light-blue">
+			<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+			<h4 class="modal-title" id="myModalLabel"><strong>Envoyer les réservations</strong></h4>
+		  </div>
+		  
+		  <div class="modal-body">
+			
+			<form action={{ action }} method="post">
+			
+			<!-- Box infos -->
+			<h4>Votre demande de réservations est prête à être envoyée.</h4>
+
+			<div class="form-group">
+				<textarea id="detail_reservations" class="form-control" rows="6" maxlength="300" placeholder="" readonly></textarea>
+			</div>
+			
+			<!-- Box commentaires -->
+			<h4>Vous pouvez ajouter un commentaire</h4>
+			<div class="form-group">
+				<textarea id="commentaire" class="form-control" rows="2" maxlength="300" placeholder=""></textarea>
+			</div>
+			
+			<!-- Div pour affiche erreur éventuelle de validation du form -->
+			<div id="message_erreur" class="text-red"></div>
+			
+		  </form>
+		  
+		  </div><!-- Fin modal body -->
+		  
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-danger" data-dismiss="modal">Annuler</button>
+			<button type="button" class="btn btn-primary" id="confirmation">Valider</button>
+		  </div>
+
+		</div>
+	  </div>
+	</div>
+
+		
+	<!-- Modal : Annulation des modifications -->
+	<div class="modal fade" id="modal_annulation" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+	  <div class="modal-dialog" role="document">
+		<div class="modal-content">
+			
+		  <div class="modal-header bg-light-blue">
+			<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+			<h4 class="modal-title" id="myModalLabel"><strong>Annuler les modifications</strong></h4>
+		  </div>
+		  
+		  <div class="modal-body">
+			
+			<form action={{ action }} method="post">
+			
+			<!-- Box infos -->
+			<div>Souhaitez-vous vraiment annuler vos dernières modifications ?</div>
+			<br>
+					
+		  </form>
+		  
+		  </div><!-- Fin modal body -->
+		  
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-default" data-dismiss="modal">Non, je veux les conserver</button>
+			<button type="button" class="btn btn-danger" id="confirmation_annulation">Oui, je veux les annuler</button>
+		  </div>
+
+		</div>
+	  </div>
+	</div>
+
+	
+	
+	<!-- Modal : Appliquer une semaine-type -->
+	<div class="modal fade" id="modal_appliquer_semaine_type" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+	  <div class="modal-dialog" role="document">
+		<div class="modal-content">
+			
+		  <div class="modal-header bg-light-blue">
+			<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+			<h4 class="modal-title" id="myModalLabel"><strong>Appliquer une semaine-type</strong></h4>
+		  </div>
+		  
+		  <div class="modal-body">
+			
+			<form action={{ action }} method="post">
+			
+			<div class="row">
+				
+				<div class="col-md-6">
+					<!-- Période d'application -->
+					<div class="form-group">
+						<label>Période d'application</label>
+						<div class="input-group">
+							<div class="input-group-addon">
+								<i class="fa fa-calendar"></i>
+							</div>
+							<input type="text" class="form-control pull-right" id="periode_application">
+						</div>
+					</div>
+				</div>
+				
+				<div class="col-md-6">
+					<!-- Sélection de la fréquence -->
+					<div class="form-group">
+						<label>Fréquence</label>
+						<select id="choix_frequence" class="form-control">
+							<option value="0">Toutes les semaines</option>
+							<option value="1">Une semaine sur deux</option>
+							<option value="2">Semaines paires/impaires</option>
+						</select>
+					</div>
+				</div>
+			
+			</div>
+			
+			<!-- Tableau de la semaine-type -->
+			<label>Semaine-type</label>
+			
+			<!-- Toutes les semaines -->
+			<div id='tableau_semaine_type_0'>
+				{{ planning_semaine_type(dict_planning=dict_planning, num_semaine=0) }}
+			</div>
+			
+			<!-- Une semaine sur deux -->
+			<div id='tableau_semaine_type_1'>
+				<div class="nav-tabs-custom no-margin">
+					<ul class="nav nav-tabs">
+						{% for num_semaine in [1, 2] %}
+						<li {% if num_semaine == 1 %}class="active"{% endif %}>
+							<a id="tab_sem_{{ num_semaine }}" class="text-primary" href="#tab_{{ num_semaine }}" data-toggle="tab">Semaine {{ num_semaine }}</a>
+						</li>
+						{% endfor %}
+					</ul>
+					<div class="tab-content no-padding">
+						{% for num_semaine in [1, 2] %}
+						<div class="tab-pane {% if num_semaine == 1 %}active{% endif %}" id="tab_{{ num_semaine }}">
+							{{ planning_semaine_type(dict_planning=dict_planning, num_semaine=num_semaine) }}
+						</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+
+			<!-- Semaines paires_/impaires -->
+			<div id='tableau_semaine_type_2'>
+				<div class="nav-tabs-custom no-margin">
+					<ul class="nav nav-tabs">
+						<li class="active">
+							<a id="tab_sem_4" class="text-primary" href="#tab_4" data-toggle="tab">Semaine paire</a>
+						</li>
+						<li>
+							<a id="tab_sem_5" class="text-primary" href="#tab_5" data-toggle="tab">Semaine impaire</a>
+						</li>
+					</ul>
+					<div class="tab-content no-padding">
+						<div class="tab-pane active" id="tab_4">
+							{{ planning_semaine_type(dict_planning=dict_planning, num_semaine=4) }}
+						</div>
+						<div class="tab-pane" id="tab_5">
+							{{ planning_semaine_type(dict_planning=dict_planning, num_semaine=5) }}
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			
+			<!-- Div pour affiche erreur éventuelle de validation du form -->
+			<div id="message_erreur" class="text-red"></div>
+			
+		  </form>
+		  
+		  </div><!-- Fin modal body -->
+		  
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+			<button type="button" class="btn btn-primary" id="confirmation_appliquer_semaine_type">Appliquer</button>
+		  </div>
+
+		</div>
+	  </div>
+	</div>
+
+	
+{% endmacro %}
+
+
+{%  macro planning_scripts(dict_planning={}) %}
+
+	<script>
+		// Affichage de la fenêtre modale 'Appliquer une semaine-type'
+		$('#modal_appliquer_semaine_type').on('show.bs.modal', function (event) {
+			$("#choix_frequence").val(0);
+			$("#tableau_semaine_type_0").show();
+			$("#tableau_semaine_type_1").hide();
+			$("#tableau_semaine_type_2").hide();
+		})
+	</script>
+
+	
+	<script>
+		$('#choix_frequence').on("change", function(e) { 
+			if ( $("#choix_frequence").val() == 0 ) {
+				$("#tableau_semaine_type_0").show();
+				$("#tableau_semaine_type_1").hide();
+				$("#tableau_semaine_type_2").hide();
+				}
+			if ( $("#choix_frequence").val() == 1 ) {
+				$("#tableau_semaine_type_0").hide();
+				$("#tableau_semaine_type_1").show();
+				$("#tableau_semaine_type_2").hide();
+				}
+			if ( $("#choix_frequence").val() == 2 ) {
+				$("#tableau_semaine_type_0").hide();
+				$("#tableau_semaine_type_1").hide();
+				$("#tableau_semaine_type_2").show();
+				}
+		});
+	</script>
+
+	<script src="{{ adminlte_find_resource('plugins/moment/moment.min.js', cdn='local', use_minified=False)}}"></script>
+	<script src="{{ adminlte_find_resource('plugins/daterangepicker/daterangepicker.js', cdn='local', use_minified=False)}}"></script>
+	<script>
+	// Préparation de la modal Appliquer une semaine-type
+	$('#modal_appliquer_semaine_type').on('shown.bs.modal', function() {
+		// Préparation du datepicker
+		$('#periode_application').daterangepicker({
+				showDropdowns: false,
+				parentEl: '#modal_appliquer_semaine_type',
+				opens: "right",
+				alwaysShowCalendars: true,
+				showWeekNumbers: false,
+				{% if dict_planning["liste_dates"]|length > 0 %}
+					startDate: '{{ DateEngFr(dict_planning["liste_dates"][0]) }}',
+					endDate: '{{ DateEngFr(dict_planning["liste_dates"][-1]) }}',
+					minDate: '{{ DateEngFr(dict_planning["liste_dates"][0]) }}',
+					maxDate: '{{ DateEngFr(dict_planning["liste_dates"][-1]) }}',
+				{% endif %}
+				locale: {
+					"format": "DD/MM/YYYY",
+					"separator": " - ",
+					"applyLabel": "Valider",
+					"cancelLabel": "Annuler",
+					"fromLabel": "De",
+					"toLabel": "à",
+					"weekLabel": "N°",
+					"daysOfWeek": [
+						"Dim",
+						"Lun",
+						"Mar",
+						"Mer",
+						"Jeu",
+						"Ven",
+						"Sam"
+					],
+					"monthNames": [
+						"Janvier",
+						"Février",
+						"Mars",
+						"Avril",
+						"Mai",
+						"Juin",
+						"Juillet",
+						"Août",
+						"Septembre",
+						"Octobre",
+						"Novembre",
+						"Décembre"
+					],
+					"firstDay": 1
+					}
+				});
+		});
+	</script>
+
+	
+	<script>
+		$("input[name='case_type']").on('ifClicked', function(event){
+			// Coche une unité à la fois
+			if({{ dict_planning["periode"].activite.unites_multiples }} == 0) {
+				var semaine = $(this).attr('data-semaine');
+				var jour = $(this).attr('data-jour');
+				var IDunite = $(this).attr('data-IDunite');
+				$("input[data-semaine='" + semaine + "'][data-jour='" + jour + "']:checked").each(function() {
+					$(this).iCheck('uncheck');
+					});
+				};
+			});
+
+	</script>
+
+
+	
+	<script>
+	// Annulation des modifications ?
+	dirty = 0;
+	$(function() {
+		$('a#retour_reservations,button#annuler,a[id!="imprimer"][id!="tab_sem_1"][id!="tab_sem_2"][id!="tab_sem_4"][id!="tab_sem_5"]').bind('click', function(event) {
+			var href = $(this).attr('href');
+			if(dirty == 1) {
+				$('#modal_annulation').modal('show');
+				event.preventDefault();
+				}
+			else {
+				location.href = href
+				}
+			});
+		});
+	</script>
+	
+	<script>
+	// Confirmation de l'annulation des modifications
+	$(function() {
+		$('button#confirmation_annulation').bind('click', function() {
+			location.href = "{{ url_for('reservations') }}"
+			});
+		});
+	</script>
+	
+	<script>
+	
+		function VerifieCocheUnique(ctrl){
+			if({{ dict_planning["periode"].activite.unites_multiples }} == 0) {
+				var date = ctrl.attr('data-date');
+				var IDunite = ctrl.attr('data-IDunite');
+				$("input[data-date='" + date + "']:checked").each(function() {
+					$(this).iCheck('uncheck');
+					});
+				};
+			// définit dirty
+			dirty = 1;
+			};
+
+		$('input#case').on('ifClicked', function(event){
+			VerifieCocheUnique($(this));
+			});
+
+	</script>
+	
+	<script>
+		// Reset des champs de saisie de la fenêtre modale
+		$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+		$('#modal_confirmation_envoi').on('show.bs.modal', function (event) {
+			var modal = $(this)
+			
+			// Reset de champs
+			$('#commentaire').text('')
+			$('#message_erreur').text('')
+			modal.find('#detail_reservations').val('')
+			
+			// Recherche les cases cochées
+			var liste_resultats = [];
+			$("input#case:checked").each(function() {
+				var date = $(this).attr('data-date');
+				var IDunite = $(this).attr('data-IDunite');
+				var valeur = date + "#" + IDunite.toString();
+				liste_resultats.push(valeur);
+			});
+
+			var csrf_token = "{{ csrf_token() }}";
+			$.ajaxSetup({
+				beforeSend: function(xhr, settings) {
+					if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+						xhr.setRequestHeader("X-CSRFToken", csrf_token);
+					}
+				}
+			});
+
+			// Demande le détail au serveur
+			$.getJSON({
+				url: $SCRIPT_ROOT + "/detail_envoi_reservations",
+				data: {
+					IDactivite: {{ dict_planning["inscription"].IDactivite }},
+					resultats: liste_resultats.join(","),
+					liste_reservations_initiale: '{{ dict_planning["liste_reservations_initiale"] }}',
+				},
+				type: 'POST',
+			}, function(data) {
+				if (data.success) {
+					modal.find('#detail_reservations').val(data.detail)
+				} else {
+					// Affiche un message d'erreur dans la fenêtre modale
+					$('#message_erreur').text('Erreur: ' + data.error_msg)
+				}
+			});			  
+				
+		})
+	</script>	
+
+	
+	<script>
+	// Impression réservations
+	$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+	$(function() {
+		$('a#imprimer').bind('click', function() {
+			var liste_resultats = [];
+			$("input#case:checked").each(function() {
+				var date = $(this).attr('data-date');
+				var IDunite = $(this).attr('data-IDunite');
+				var valeur = date + "A" + IDunite.toString();
+				liste_resultats.push(valeur);
+			});
+			var IDindividu = {{ dict_planning['inscription'].IDindividu }};
+			var IDperiode = {{ dict_planning['periode'].IDperiode }};
+			var resultats = liste_resultats.join(",");
+			window.open(
+				$SCRIPT_ROOT + '/imprimer_reservations?IDindividu=' + IDindividu + "&IDperiode=" + IDperiode + "&resultats=" + resultats,
+				'_blank'
+				);
+		});
+	});
+	</script>
+	
+	
+	
+	<script>
+	// Validation de l'envoi des réservations
+	$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+	$(function() {
+		$('button#confirmation').bind('click', function() {
+			var liste_resultats = [];
+			$("input#case:checked").each(function() {
+				var date = $(this).attr('data-date');
+				var IDunite = $(this).attr('data-IDunite');
+				var valeur = date + "#" + IDunite.toString();
+				liste_resultats.push(valeur);
+			});
+
+			$.ajax({
+			  type: 'POST',
+			  dataType: "json",
+			  url: $SCRIPT_ROOT + '/envoyer_reservations',
+			  data: {
+				resultats: liste_resultats.join(","),
+				IDinscription: {{ dict_planning["inscription"].IDinscription }},
+				IDperiode: {{ dict_planning["periode"].IDperiode }},
+				IDactivite: {{ dict_planning["inscription"].IDactivite }},
+				activite_nom: '{{ dict_planning["inscription"].activite.nom }}',
+				IDindividu: {{ dict_planning["inscription"].IDindividu }},
+				individu_prenom: '{{ dict_planning["inscription"].get_individu().GetRenseignement("prenom") }}',
+				date_debut_periode: '{{ dict_planning["periode"].date_debut }}',
+				date_fin_periode: '{{ dict_planning["periode"].date_fin }}',
+				commentaire: $("#commentaire").val(),
+				liste_reservations_initiale: '{{ dict_planning["liste_reservations_initiale"] }}',
+				},
+			  success: function(data) {
+					if (data.success) {
+						// Cache la fenêtre modale
+						$('#modal_confirmation_envoi').modal('hide');
+						// Recharge la page
+						location.href = "{{ url_for('reservations') }}"
+					} else {
+						$('#message_erreur').text('Erreur : ' + data.error_msg)
+					}
+				}
+			});
+		});
+	});
+	</script>
+	
+	
+	
+	<script>
+	// Fonction Pair/Impair
+	function isPair(chiffre){
+		chiffre=parseInt(chiffre);
+		return ((chiffre & 1)=='0')?true:false;
+	};
+
+	// Confirmation de l'application de la semaine-type
+	$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+	$(function() {
+		$('button#confirmation_appliquer_semaine_type').bind('click', function() {
+			
+			// Récupération de la période d'application
+			var date_debut = $('#periode_application').data('daterangepicker').startDate.format('YYYY-MM-DD');
+			var num_semaine_debut = moment(date_debut, 'YYYY-MM-DD').isoWeek();
+			var date_fin = $('#periode_application').data('daterangepicker').endDate.format('YYYY-MM-DD');
+			
+			// Récupération de la fréquence
+			var frequence = $("#choix_frequence").val();
+			
+			// Récupération des jours de la semaine-type
+			var liste_resultats = [];
+			$("input[name='case_type']:checked").each(function() {
+				var semaine = parseInt($(this).attr('data-semaine'));
+				var jour = parseInt($(this).attr('data-jour'));
+				var IDunite = parseInt($(this).attr('data-IDunite'));
+				if ( (frequence == 0 && semaine == 0) || (frequence == 1 && (semaine == 1 || semaine == 2) ) || (frequence == 2 && (semaine == 4 || semaine == 5) ) ){
+					liste_resultats.push({semaine: semaine, jour: jour, IDunite:IDunite});
+					};
+			});
+			
+			// Coche les cases du planning
+			$("input#case:enabled").each(function() {
+			
+				var dateeng = $(this).attr('data-date');
+				var datejs = moment(dateeng, 'YYYY-MM-DD');
+				var num_jour = datejs.weekday()-1;
+				var num_semaine = datejs.isoWeek();
+				var IDunite = $(this).attr('data-IDunite');
+				
+				$(this).iCheck('uncheck');
+				
+				for (var i=0; i < liste_resultats.length; i++){
+					if (dateeng >= date_debut && dateeng <= date_fin && liste_resultats[i].jour == num_jour && liste_resultats[i].IDunite == IDunite){
+						var valide = false;
+						// Toutes les semaines
+						if (frequence == 0){
+							var valide = true;
+							}
+						// 1 semaine sur 2
+						if (frequence == 1 && ((isPair(liste_resultats[i].semaine) != isPair(num_semaine)) == isPair(num_semaine_debut))){
+							var valide = true;
+							}
+						// Semaines paires/impaires
+						if (frequence == 2 && isPair(liste_resultats[i].semaine) == isPair(num_semaine)){
+							var valide = true;
+							}
+						// Application réservation
+						if (valide == true){
+							VerifieCocheUnique($(this));
+							$(this).iCheck('check');
+							}
+						}
+					}
+				});
+			
+			// Fermeture de la modal
+			$('#modal_appliquer_semaine_type').modal('hide');
+		});
+	});
+	</script>
+
+	
+{% endmacro %}

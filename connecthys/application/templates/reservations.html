@@ -1,0 +1,103 @@
+{% extends "page.html" %}
+{% import "macros_historique.html" as macros_historique with context %}
+
+
+{%- block styles %}
+{{ super() }}
+<!-- Modification couleur tab -->
+<style type="text/css" media="screen">
+.nav-tabs-custom > .nav-tabs > li.active {
+	border-top-color: #ffffff;
+	font-weight: bold;
+}
+</style>
+{%- endblock styles %}
+
+	
+{% block content -%}
+
+{% if GetParametre("RESERVATIONS_INTRO", dict_parametres) != '' %}
+	<h4 class="page-header">
+		<small><i class="fa fa-info-circle"></i> {{ GetParametre("RESERVATIONS_INTRO", dict_parametres) }}</small>
+	</h4>
+{% endif %}
+  
+  
+
+{% for individu in liste_individus %}
+<div class="box box-widget widget-user-2">
+	
+	<!-- Définit une couleur au hasard pour l'individu -->
+	{% set couleur = individu.couleur %}
+	
+	<!-- Nom de l'individu -->
+	<div class="widget-user-header bg-{{ couleur }}">
+		<div class="widget-user-image">
+			<img class="img-circle" src="{{ url_for('static', filename=individu.get_image()) }}" alt="User Avatar">
+		</div>
+		<h3 class="widget-user-username">{{ individu.GetRenseignement("prenom") or individu.GetRenseignement("nom") }}</h3>
+		<h5 class="widget-user-desc">{{ individu.get_date_naiss() }}&nbsp;</h5>
+	</div>
+	
+	{% if GetNbrePeriodesActives(individu.inscriptions_actives) == 0 %}
+		<div class="box-footer">
+			<p>Aucune période d'inscription disponible</p>
+		</div>
+	{% else %}
+		<!-- Liste des périodes -->
+		<div class="box-footer no-padding">
+		
+			<div class="nav-tabs-custom no-margin">
+			
+				<ul class="nav nav-tabs">
+					{% for inscription in individu.inscriptions_actives %}
+						<li {% if loop.index == 1 %}class="active"{% endif %}>
+							<a class="text-{{ couleur }}" href="#tab_{{ inscription.IDinscription }}_{{ loop.index }}" data-toggle="tab">{{ inscription.activite.nom }}</a>
+						</li>
+					{% endfor %}
+				</ul>
+							
+				<div class="tab-content no-padding">
+					
+					{% for inscription in individu.inscriptions_actives %}
+						<div class="tab-pane {% if loop.index == 1 %}active{% endif %}" id="tab_{{ inscription.IDinscription }}_{{ loop.index }}">
+							<ul class="nav nav-stacked">
+								{% for periode in inscription.activite.periodes %}
+									{% if periode.Is_active_today() == True %}
+										<li>
+											<a href="{{ url_for('planning', IDindividu=inscription.IDindividu, IDperiode=periode.IDperiode, index_couleur=individu.index_couleur) }}">
+												<i class="fa fa-calendar text-{{ couleur }}"></i>
+												{{ periode.nom }}
+												<small class="pull-right">Du {{ DateDDEnFr(periode.date_debut) }} au {{ DateDDEnFr(periode.date_fin) }}</small>
+											</a>
+										</li>
+									{% endif %}
+								{% endfor %}
+							</ul>
+						</div>
+					{% endfor %}
+					
+				</div>
+				
+			</div>
+		</div>
+	{% endif %}
+		
+</div>
+{% endfor %}
+		  	
+<br>
+			
+{# Historique des demandes #}
+{{ macros_historique.historique_body(titre="Historique des demandes", soustitre="Vous pouvez supprimer des demandes non traitées.", historique=historique) }}
+
+{%- endblock content %}
+
+{% block scripts %}
+
+	{{ super() }}
+
+	{# Historiques des demandes #}
+	{{ macros_historique.historique_scripts(historique=historique, page="reservations") }}
+
+{%- endblock scripts %}

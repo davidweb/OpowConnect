@@ -1,0 +1,153 @@
+{% extends "adminlte/base_without_nav.html" %}
+
+{% block title %}Connexion{% endblock %}
+{% block description %}Connexion{% endblock %}
+{% block bodytag %}login-page {% block skin %}{{ GetParametre('SKIN', dict_parametres, 'skin-blue') }}{% endblock %}{% endblock %}
+
+{% block head %}
+	{{ super() }}
+	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+	<!-- iCheck -->
+	<link href="{{ adminlte_find_resource('plugins/iCheck/all.css', cdn='local', use_minified=False) }}" rel="stylesheet" type="text/css">
+	
+	{# Affichage de l'image de fond #}
+	{% set IMAGE_FOND = GetParametre("IMAGE_FOND", dict_parametres) %}
+	{% if IMAGE_FOND == "" %}
+		{% set IMAGE_FOND = "bleu.jpg" %}
+	{% endif %}
+	
+	<style type="text/css" media="screen">
+	
+		html, body {
+			background-size: cover;
+			background: center fixed;
+			background-image:url({{ url_for('static', filename="fonds/" + IMAGE_FOND) }});
+		}
+		.login-page {
+			background-color:transparent;
+		}
+		.login-box-body
+		{
+		  background:rgba(255, 255, 255, 0.8);	
+		}
+		
+	
+.login-footer {
+	position: fixed;
+    bottom: 0;
+    width: 100%;
+	display: block;
+	background-color: #222d32;
+    padding: 15px;
+	color: #fff;
+	font-size: 15px;
+    border-top: 1px solid #d2d6de;
+    -webkit-transition: -webkit-transform .3s ease-in-out,margin .3s ease-in-out;
+    -moz-transition: -moz-transform .3s ease-in-out,margin .3s ease-in-out;
+    -o-transition: -o-transform .3s ease-in-out,margin .3s ease-in-out;
+    transition: transform .3s ease-in-out,margin .3s ease-in-out;
+    z-index: 820;
+	}
+	
+	
+	</style>
+	
+	
+{% endblock %}
+
+
+
+{% block body %}
+
+
+	<div class="login-box">
+		<div style="color: black" class="login-logo">
+			{{ GetParametre("ACCUEIL_TITRE", dict_parametres)|safe }}
+		</div>
+		<div class="login-box-body">
+			<p>Saisissez vos codes personnels</p>
+			{# Display errors (if there are any). #}
+			{% with messages = get_flashed_messages(category_filter=["error"]) %}
+				{% if messages %}
+					{% for message in messages %}
+						<p><strong style="color: red">{{ message }}</strong></p>
+					{% endfor %}
+				{% endif %}
+			{% endwith %}
+			{# Render the login form. #}
+			<form action="{{ url_for('login') }}" method="post">
+				{{ form.csrf_token }}
+				<div class="form-group has-feedback">
+					{{ form.identifiant(class='form-control', placeholder='Identifiant', type='text', required='true') }}
+					<span class="glyphicon glyphicon-user form-control-feedback"></span>
+				</div>
+				<div class="form-group has-feedback">
+					{{ form.password(class='form-control', placeholder='Mot de passe', type='password', required='true') }}
+					<span class="glyphicon glyphicon-lock form-control-feedback"></span>
+				</div>
+				{% if form.recaptcha %}
+					<div class="form-group">
+						{{ form.recaptcha() }}
+					</div>
+				{% endif %}
+				{% if form.captcha %}
+					<p>Recopiez le code de sécurité ci-dessous</p>
+					<div class="form-group">
+						{{ captcha() }}
+					</div>
+					<div class="form-group has-feedback">
+						{{ form.captcha(class="form-control", placeholder='Code de sécurité (5 chiffres)', required='true', autocomplete="off") }}
+						<span class="form-control-feedback"><i class="fa fa-shield"></i></span>
+					</div>
+				{% endif %}
+				<div class="row">
+					<div class="col-xs-8">
+						<div class="checkbox icheck">
+							{% if GetParametre("MDP_AUTORISER_REINITIALISATION", dict_parametres) == 'True' %}
+								<label>
+									<a href="{{ url_for('lost_password') }}">Mot de passe oublié ?</a>
+								</label>
+							{% endif %}
+						</div>
+					</div>
+					<!-- /.col -->
+					<div class="col-xs-4">
+						<button type="submit" class="btn btn-primary btn-block btn-flat">Valider</button>
+					</div>
+					<!-- /.col -->
+				</div>
+			</form>
+		</div>
+	</div>
+
+
+
+<footer class="login-footer">
+
+	<div class="pull-right hidden-xs">
+		{% block version %}
+		<b><a href="https://connecthys.com" title="Connecthys, le portail internet de Noethys">Connecthys</a></b> {{ config["VERSION_APPLICATION"] }}
+		{% endblock %}
+	</div>
+	
+	{% block copyright %}{% if GetParametre('ORGANISATEUR_NOM', dict_parametres) != '' %}{{ GetParametre('ORGANISATEUR_NOM', dict_parametres) }}{% endif %}{% endblock %}
+
+</footer>
+
+{% endblock %}
+
+
+{% block scripts %}
+	{{ super() }}
+	<!-- iCheck -->
+	<script src="{{ adminlte_find_resource('plugins/iCheck/icheck.min.js', cdn='local', use_minified=False)}}"></script>
+	<script>
+	  $(function () {
+		$('input').iCheck({
+		  checkboxClass: 'icheckbox_square-blue',
+		  radioClass: 'iradio_square-blue',
+		  increaseArea: '20%' // optional
+		});
+	  });
+	</script>
+{%- endblock scripts %}
