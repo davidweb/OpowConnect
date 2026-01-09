@@ -1,0 +1,12 @@
+pytz
+pycryptodome
+python-dateutil
+flask
+flask-migrate
+flask-sqlalchemy
+flask-wtf
+flask-login
+flask-mail
+flask-debugtoolbar
+flask-sessionstore
+flask-session-captcha
