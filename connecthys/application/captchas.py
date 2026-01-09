@@ -3,8 +3,8 @@
 #--------------------------------------------------------------
 # Application :    Connecthys, le portail internet de Noethys
 # Site internet :  www.noethys.com
-# Auteur:          Ivan LUCAS
-# Copyright:       (c) 2010-20 Ivan LUCAS
+# Auteur:          GM-Dev
+# Copyright:       (c) 2010-20 GM-Dev
 # Licence:         Licence GNU GPL
 #--------------------------------------------------------------
 
